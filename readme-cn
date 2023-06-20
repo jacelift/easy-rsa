@@ -1,0 +1,88 @@
+Easy-rsa的使用
+
+```【01】安装
+wget https://github.com/OpenVPN/easy-rsa/archive/refs/heads/master.zip
+解压
+unzip 压缩包
+
+
+```【02】将easyrsa3下的vars.example复制并名为vars
+
+将下面位置的注释去掉，并修改
+=======================【start：可省略】==========================
+#设置国家
+set_var EASYRSA_REQ_COUNTRY     "US"
+#设置省份
+set_var EASYRSA_REQ_PROVINCE    "California"
+#设置市
+set_var EASYRSA_REQ_CITY        "San Francisco"
+#版本
+set_var EASYRSA_REQ_ORG "Copyleft Certificate Co"
+#邮箱
+set_var EASYRSA_REQ_EMAIL       "me@example.net"
+#组织
+set_var EASYRSA_REQ_OU          "My Organizational Unit"
+=======================【end：可省略】==========================
+
+
+将有效期825天改为3650（10年）：
+#set_var EASYRSA_CERT_EXPIRE	825
+改为：
+set_var EASYRSA_CERT_EXPIRE	3650
+
+
+【03】初始化PKI（Windows下运行EasyRSA-Start.bat进入shell环境）
+./easyrsa init-pki
+#初始化完成之后会easyrsa3文件夹下会多一个pki文件
+
+
+【04】创建根证书（CA：也就是证书颁发机构）
+用于CA对之后生成的server和client证书签名时使用
+
+# nopass表示不对ca加密
+#使用该命令，需要对ca加密，后面要输入加密密码：./easyrsa build-ca
+#中间要输入 Common Name（这里默认或者输入ca），签名的时候用到
+#会在easyrsa3/pki下ca.crt
+./easyrsa build-ca nopass
+
+​
+【05】创建生成服务器端证书
+#nopass表示不对私钥加密
+#实例1：./easyrsa gen-req synology.com nopass
+#根据后面提示common name时可输入泛域名：*.jacelift.tk
+#106.52.193.106表示文件名称./easyrsa gen-req 106.52.193.106
+#生成的req在easyrsa3/pki/reqs/
+#生成的key在easyrsa3/pki/private/
+./easyrsa gen-req 106.52.193.106 nopass
+
+
+【06】给服务器证书签名
+#106.52.193.106为服务器端证书时的指定的common name
+#实例1：./easyrsa sign-req server synology.com nopass
+./easyrsa sign-req server 106.52.193.106   #生成的crt在easyrsa3/pki/issued/
+
+
+【07】创建Diffie-Hellman文件
+#秘钥交换时的DH算法，确保密钥可以穿越不安全网络
+./easyrsa gen-dh    #生成的pem在easyrsa3/pki/
+
+
+【08】验证证书是否正确
+openssl verify -CAfile ca.crt issued/106.52.193.106.crt
+
+
+
+===================================
+【】创建客户端的证书
+#wogong3表示文件名称
+#nopass表示不加密
+./easyrsa gen-req wogong3 nopass
+
+
+【】给客户端的证书签名
+#wogong3为创建客户端的证书的Common Name
+./easyrsa sign-req client wogong3
+
+
+https://zhuanlan.zhihu.com/p/615205839
+https://github.com/OpenVPN/easy-rsa
